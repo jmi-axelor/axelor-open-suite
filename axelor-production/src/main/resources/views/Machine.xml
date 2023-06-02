@@ -32,6 +32,9 @@
       <field name="brand"/>
       <field name="stockLocation" required="true" grid-view="stock-location-grid"
         form-view="stock-location-form"/>
+      <field name="workshopStockLocationSet" canEdit="false"
+        domain="self.typeSelect = 1 and self.isWorkshop = true"
+        if="__config__.app.getApp('production')?.getManageWorkshop()" widget="TagSelect"/>
       <field name="code" x-bind="{{code|unaccent|uppercase}}"/>
       <field name="manufReference"/>
       <field name="buyingPrice"/>

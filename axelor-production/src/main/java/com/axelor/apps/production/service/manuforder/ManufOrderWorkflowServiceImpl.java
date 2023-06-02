@@ -50,6 +50,7 @@ import com.axelor.apps.production.db.repo.ProductionConfigRepository;
 import com.axelor.apps.production.exceptions.ProductionExceptionMessage;
 import com.axelor.apps.production.service.app.AppProductionService;
 import com.axelor.apps.production.service.costsheet.CostSheetService;
+import com.axelor.apps.production.service.operationorder.OperationOrderService;
 import com.axelor.apps.production.service.operationorder.OperationOrderWorkflowService;
 import com.axelor.apps.production.service.productionorder.ProductionOrderService;
 import com.axelor.apps.purchase.db.PurchaseOrder;
@@ -86,6 +87,8 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
   protected ProductionConfigRepository productionConfigRepo;
   protected PurchaseOrderService purchaseOrderService;
 
+  protected OperationOrderService operationOrderService;
+
   @Inject
   public ManufOrderWorkflowServiceImpl(
       OperationOrderWorkflowService operationOrderWorkflowService,
@@ -94,7 +97,8 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
       ManufOrderRepository manufOrderRepo,
       ProductCompanyService productCompanyService,
       ProductionConfigRepository productionConfigRepo,
-      PurchaseOrderService purchaseOrderService) {
+      PurchaseOrderService purchaseOrderService,
+      OperationOrderService operationOrderService) {
     this.operationOrderWorkflowService = operationOrderWorkflowService;
     this.operationOrderRepo = operationOrderRepo;
     this.manufOrderStockMoveService = manufOrderStockMoveService;
@@ -102,6 +106,7 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
     this.productCompanyService = productCompanyService;
     this.productionConfigRepo = productionConfigRepo;
     this.purchaseOrderService = purchaseOrderService;
+    this.operationOrderService = operationOrderService;
   }
 
   @Override
@@ -110,6 +115,7 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
     List<ManufOrder> manufOrderList = new ArrayList<>();
     manufOrderList.add(manufOrder);
     plan(manufOrderList);
+    operationOrderService.updateOperations(manufOrder);
     return manufOrderRepo.save(manufOrder);
   }
 
@@ -183,6 +189,8 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
         manufOrder.setPlannedEndDateT(this.computePlannedEndDateT(manufOrder));
       }
 
+      realPlan(manufOrder);
+
       if (manufOrder.getBillOfMaterial() != null) {
         manufOrder.setUnit(manufOrder.getBillOfMaterial().getUnit());
       }
@@ -200,6 +208,66 @@ public class ManufOrderWorkflowServiceImpl implements ManufOrderWorkflowService 
       Beans.get(ProductionOrderService.class).updateStatus(manufOrder.getProductionOrderSet());
     }
     return manufOrderList;
+  }
+
+  protected void realPlan(ManufOrder manufOrder) {
+    List<OperationOrder> operations = manufOrder.getOperationOrderList();
+    LocalDateTime deliveryDateTime = manufOrder.getPlannedDeliveryDateT();
+    if (operations == null || deliveryDateTime == null) {
+      return;
+    }
+    Long duration = 0L;
+    for (OperationOrder operationOrder : operations) {
+      duration += operationOrder.getPlannedDuration();
+    }
+    LocalDateTime idealStartDateTime = deliveryDateTime.minusSeconds(duration);
+    LocalDateTime idealEndDateTime = deliveryDateTime;
+    do {
+      List<ManufOrder> existingManufOrders =
+          manufOrderRepo
+              .all()
+              .filter(
+                  "self != :manufOrder AND self.workshopStockLocation = :workshop "
+                      + "AND self.statusSelect IN (:plannedStatus,:inProgressStatus,:standByStatus) "
+                      + "AND ((self.plannedStartDateT >= :operationOrderStartDate AND self.plannedEndDateT < :operationOrderEndDate) "
+                      + "OR (self.plannedStartDateT < :operationOrderEndDate AND self.plannedEndDateT > :operationOrderEndDate) "
+                      + "OR (self.plannedStartDateT <= :operationOrderStartDate AND self.plannedEndDateT > :operationOrderStartDate) "
+                      + "OR (self.plannedStartDateT <= :operationOrderStartDate AND self.plannedEndDateT > :operationOrderEndDate) "
+                      + "OR (self.plannedStartDateT = :operationOrderStartDate AND self.plannedEndDateT = :operationOrderEndDate) "
+                      + "))")
+              .bind("manufOrder", manufOrder)
+              .bind("plannedStatus", ManufOrderRepository.STATUS_PLANNED)
+              .bind("inProgressStatus", ManufOrderRepository.STATUS_IN_PROGRESS)
+              .bind("standByStatus", ManufOrderRepository.STATUS_STANDBY)
+              .bind("workshop", manufOrder.getWorkshopStockLocation())
+              .bind("operationOrderStartDate", idealStartDateTime)
+              .bind("operationOrderEndDate", idealEndDateTime)
+              .fetch();
+      if (CollectionUtils.isEmpty(existingManufOrders)) {
+        break;
+      }
+      ManufOrder minOperation = null;
+      for (ManufOrder manufOrderIt : existingManufOrders) {
+        if (minOperation == null
+            || minOperation.getPlannedStartDateT().compareTo(manufOrderIt.getPlannedStartDateT())
+                > 0) {
+          minOperation = manufOrderIt;
+        }
+      }
+      idealEndDateTime = minOperation.getPlannedStartDateT();
+      idealStartDateTime = idealEndDateTime.minusSeconds(duration);
+    } while (idealStartDateTime.compareTo(manufOrder.getPlannedStartDateT()) > 0);
+    if (idealStartDateTime.compareTo(manufOrder.getPlannedStartDateT()) < 0) {
+      return;
+    }
+    manufOrder.setPlannedStartDateT(idealStartDateTime);
+    manufOrder.setPlannedEndDateT(idealEndDateTime);
+    LocalDateTime currentDateTime = idealStartDateTime;
+    for (OperationOrder operationOrder : operations) {
+      operationOrder.setPlannedStartDateT(currentDateTime);
+      currentDateTime = currentDateTime.plusSeconds(operationOrder.getPlannedDuration());
+      operationOrder.setPlannedEndDateT(currentDateTime);
+    }
   }
 
   @Override

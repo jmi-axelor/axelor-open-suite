@@ -270,4 +270,8 @@ public interface ManufOrderService {
   List<ManufOrder> getChildrenManufOrder(ManufOrder manufOrder);
 
   public BigDecimal computeProducibleQty(ManufOrder manufOrder) throws AxelorException;
+
+  public List<Long> setWorkshopDomain(ManufOrder manufOrder);
+
+  public List<Long> setBOMDomain(ManufOrder manufOrder);
 }

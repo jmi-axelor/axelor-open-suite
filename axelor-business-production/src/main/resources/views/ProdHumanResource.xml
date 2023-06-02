@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<object-views xmlns="http://axelor.com/xml/ns/object-views"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/object-views http://axelor.com/xml/ns/object-views/object-views_5.4.xsd">
+
+  <form id="business-prod-prod-human-resource-form" name="prod-human-resource-form"
+    title="Prod. Human resource" model="com.axelor.apps.production.db.ProdHumanResource"
+    extension="true">
+    <extend target="//field[@name='employee']">
+      <attribute name="onSelect"
+        value="action-prod-human-resource-method-set-employee-domain"/>
+    </extend>
+  </form>
+
+  <action-method name="action-prod-human-resource-method-set-employee-domain">
+    <call class="com.axelor.apps.businessproduction.web.ProdHumanResourceBusinessController"
+      method="setEmployeeDomain"/>
+  </action-method>
+
+</object-views>

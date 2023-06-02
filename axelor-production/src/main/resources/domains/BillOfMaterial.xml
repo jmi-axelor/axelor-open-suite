@@ -43,6 +43,9 @@
 
     <string name="note" large="true"/>
 
+    <many-to-many name="parameterSet" ref="com.axelor.apps.production.db.Parameter"
+      title="Parameters"/>
+
     <extra-code><![CDATA[
 
     	// STATUS SELECT

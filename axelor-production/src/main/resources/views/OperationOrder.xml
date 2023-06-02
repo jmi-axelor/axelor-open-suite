@@ -133,7 +133,8 @@
     </panel>
     <panel name="resourcesPanel" title="Resources" colSpan="12" readonlyIf="statusSelect == 6">
       <field name="workCenter" grid-view="work-center-grid" form-view="work-center-form"
-        colSpan="4" onChange="action-operation-order-attrs-workcenter-machine"/>
+        colSpan="4" onChange="action-operation-order-attrs-workcenter-machine"
+        onSelect="action-operation-order-method-set-workcenter-domain"/>
       <field name="machine" hidden="true" readonly="true" grid-view="machine-grid"
         form-view="machine-form" colSpan="4"/>
       <field name="machineTool" domain="self.machine = machine" form-view="machine-tool-form"
@@ -281,6 +282,11 @@
   <action-method name="action-operation-order-method-update-consumed-stock-move">
     <call class="com.axelor.apps.production.web.OperationOrderController"
       method="updateConsumedStockMoveFromOperationOrder"/>
+  </action-method>
+
+  <action-method name="action-operation-order-method-set-workcenter-domain">
+    <call class="com.axelor.apps.production.web.OperationOrderController"
+      method="setWorkCenterDomain"/>
   </action-method>
 
   <action-attrs name="action-operation-order-attrs-is-cons-pro-on-operation">

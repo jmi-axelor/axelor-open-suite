@@ -785,4 +785,33 @@ public class ManufOrderController {
       TraceBackService.trace(response, e);
     }
   }
+
+  public void setWorkshopDomain(ActionRequest request, ActionResponse response) {
+    try {
+      ManufOrder manufOrder = request.getContext().asType(ManufOrder.class);
+      String domain = "self.company = :company and self.typeSelect = 1 and self.isWorkshop = true";
+      if (manufOrder.getBillOfMaterial() != null) {
+        List<Long> ids = Beans.get(ManufOrderService.class).setWorkshopDomain(manufOrder);
+        domain += " AND self.id IN (" + Joiner.on(',').join(ids) + ")";
+      }
+      response.setAttr("workshopStockLocation", "domain", domain);
+    } catch (Exception e) {
+      TraceBackService.trace(response, e);
+    }
+  }
+
+  public void setBOMDomain(ActionRequest request, ActionResponse response) {
+    try {
+      ManufOrder manufOrder = request.getContext().asType(ManufOrder.class);
+      String domain =
+          "self.defineSubBillOfMaterial = true AND self.statusSelect = 3 AND (self.workshopStockLocation IS NULL OR self.workshopStockLocation = :workshopStockLocation) AND self.typeSelect = 1";
+      if (manufOrder.getWorkshopStockLocation() != null) {
+        List<Long> ids = Beans.get(ManufOrderService.class).setBOMDomain(manufOrder);
+        domain += " AND self.id IN (" + Joiner.on(',').join(ids) + ")";
+      }
+      response.setAttr("billOfMaterial", "domain", domain);
+    } catch (Exception e) {
+      TraceBackService.trace(response, e);
+    }
+  }
 }

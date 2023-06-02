@@ -98,6 +98,7 @@
       <field name="workshopStockLocation" canEdit="false"
         domain="self.company = :company and self.typeSelect = 1 and self.isWorkshop = true"
         if="__config__.app.getApp('production')?.getManageWorkshop()"/>
+      <field name="parameterSet" widget="TagSelect"/>
       <field name="product" canEdit="false"
         onChange="action-bill-of-material-record-product-unit,action-bill-of-material-record-set-dummy-field"
         domain="self.productTypeSelect = 'storable' AND self.productSubTypeSelect != 3 AND self.dtype = 'Product'"

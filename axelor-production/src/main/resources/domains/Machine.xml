@@ -34,5 +34,7 @@
     <integer name="numberOfStations" title="Number of stations"/>
     <one-to-many name="machineToolLineList"
       ref="com.axelor.apps.production.db.MachineTool" title="Tools" mappedBy="machine"/>
+    <many-to-many name="workshopStockLocationSet"
+      ref="com.axelor.apps.stock.db.StockLocation" title="Workshops"/>
   </entity>
 </domain-models>

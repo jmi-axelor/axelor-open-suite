@@ -10,5 +10,7 @@
     <boolean name="usableOnProduction" title="Usable on production"/>
     <boolean name="isWorkshop"/>
     <boolean name="isOutsourcingLocation" title="Outsourcing location"/>
+    <many-to-many name="parameterSet" ref="com.axelor.apps.production.db.Parameter"
+      title="Parameters"/>
   </entity>
 </domain-models>

@@ -102,4 +102,8 @@ public interface OperationOrderService {
       throws AxelorException;
 
   public void createBarcode(OperationOrder operationOrder);
+
+  public List<Long> setWorkCenterDomain(OperationOrder operationOrder);
+
+  public void updateOperations(ManufOrder manufOrder);
 }

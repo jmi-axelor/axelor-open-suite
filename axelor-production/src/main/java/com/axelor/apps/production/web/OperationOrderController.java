@@ -34,6 +34,7 @@ import com.axelor.inject.Beans;
 import com.axelor.meta.schema.actions.ActionView;
 import com.axelor.rpc.ActionRequest;
 import com.axelor.rpc.ActionResponse;
+import com.google.common.base.Joiner;
 import com.google.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -301,6 +302,20 @@ public class OperationOrderController {
       Beans.get(OperationOrderService.class)
           .updateConsumedStockMoveFromOperationOrder(operationOrder);
       response.setReload(true);
+    } catch (Exception e) {
+      TraceBackService.trace(response, e);
+    }
+  }
+
+  public void setWorkCenterDomain(ActionRequest request, ActionResponse response) {
+    try {
+      OperationOrder operationOrder = request.getContext().asType(OperationOrder.class);
+      operationOrder = Beans.get(OperationOrderRepository.class).find(operationOrder.getId());
+      if (operationOrder.getManufOrder().getWorkshopStockLocation() == null) {
+        return;
+      }
+      List<Long> ids = Beans.get(OperationOrderService.class).setWorkCenterDomain(operationOrder);
+      response.setAttr("workCenter", "domain", "self.id IN (" + Joiner.on(',').join(ids) + ")");
     } catch (Exception e) {
       TraceBackService.trace(response, e);
     }

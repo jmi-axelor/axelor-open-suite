@@ -355,6 +355,15 @@
   <menuitem name="manufacturing-conf-configurators" parent="manufacturing-conf"
     title="Configurators" if="__config__.app.getApp('production')?.getEnableConfigurator()"/>
 
+  <menuitem name="manufacturing-conf-parameter" parent="manufacturing-conf"
+    title="Parameters" action="manufacturing.conf.parameter"/>
+
+  <action-view name="manufacturing.conf.parameter" title="Parameters"
+    model="com.axelor.apps.production.db.Parameter">
+    <view type="grid" name="parameter-grid"/>
+    <view type="form" name="parameter-form"/>
+  </action-view>
+
   <menuitem name="manufacturing-conf-configurators-creator"
     parent="manufacturing-conf-configurators" order="10" title="Configurator creators"
     action="manufacturing.conf.configurator.creator"/>

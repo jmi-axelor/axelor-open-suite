@@ -28,15 +28,7 @@ import com.axelor.apps.base.service.ProductVariantService;
 import com.axelor.apps.base.service.UnitConversionService;
 import com.axelor.apps.base.service.administration.SequenceService;
 import com.axelor.apps.base.service.app.AppBaseService;
-import com.axelor.apps.production.db.BillOfMaterial;
-import com.axelor.apps.production.db.ManufOrder;
-import com.axelor.apps.production.db.OperationOrder;
-import com.axelor.apps.production.db.ProdProcess;
-import com.axelor.apps.production.db.ProdProcessLine;
-import com.axelor.apps.production.db.ProdProduct;
-import com.axelor.apps.production.db.ProdResidualProduct;
-import com.axelor.apps.production.db.ProductionConfig;
-import com.axelor.apps.production.db.ProductionOrder;
+import com.axelor.apps.production.db.*;
 import com.axelor.apps.production.db.repo.BillOfMaterialRepository;
 import com.axelor.apps.production.db.repo.ManufOrderRepository;
 import com.axelor.apps.production.db.repo.ProdProductRepository;
@@ -71,6 +63,7 @@ import com.axelor.meta.db.MetaFile;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
 import java.io.IOException;
@@ -1324,5 +1317,62 @@ public class ManufOrderServiceImpl implements ManufOrderService {
                 .multiply(bomQty)
                 .setScale(appBaseService.getNbDecimalDigitForQty(), RoundingMode.HALF_UP);
     return producibleQty;
+  }
+
+  public List<Long> setWorkshopDomain(ManufOrder manufOrder) {
+    List<Long> ids = Lists.newArrayList(0L);
+    List<StockLocation> workShops = getWorkShopsFromBOM(manufOrder);
+    for (StockLocation workShop : workShops) {
+      ids.add(workShop.getId());
+    }
+    return ids;
+  }
+
+  protected List<StockLocation> getWorkShopsFromBOM(ManufOrder manufOrder) {
+    List<StockLocation> workShops = Lists.newArrayList();
+    List<StockLocation> workShopsList =
+        Beans.get(StockLocationRepository.class)
+            .all()
+            .filter(
+                "self.company = ?1 and self.typeSelect = 1 and self.isWorkshop = true",
+                manufOrder.getCompany())
+            .fetch();
+    for (StockLocation workShop : workShopsList) {
+      if (workShop
+          .getParameterSet()
+          .containsAll(manufOrder.getBillOfMaterial().getParameterSet())) {
+        workShops.add(workShop);
+      }
+    }
+    return workShops;
+  }
+
+  public List<Long> setBOMDomain(ManufOrder manufOrder) {
+    List<Long> ids = Lists.newArrayList(0L);
+    List<BillOfMaterial> boms = getBOMsFromWorkShop(manufOrder);
+    for (BillOfMaterial bom : boms) {
+      ids.add(bom.getId());
+    }
+    return ids;
+  }
+
+  protected List<BillOfMaterial> getBOMsFromWorkShop(ManufOrder manufOrder) {
+    List<BillOfMaterial> boms = Lists.newArrayList();
+    List<BillOfMaterial> bomsList =
+        Beans.get(BillOfMaterialRepository.class)
+            .all()
+            .filter(
+                "self.defineSubBillOfMaterial = true AND self.statusSelect = 3 AND (self.workshopStockLocation IS NULL OR self.workshopStockLocation = ?1) AND self.typeSelect = 1",
+                manufOrder.getWorkshopStockLocation())
+            .fetch();
+    for (BillOfMaterial bom : bomsList) {
+      if (manufOrder
+          .getWorkshopStockLocation()
+          .getParameterSet()
+          .containsAll(bom.getParameterSet())) {
+        boms.add(bom);
+      }
+    }
+    return boms;
   }
 }

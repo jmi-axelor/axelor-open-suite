@@ -138,9 +138,9 @@
           grid-view="company-grid"/>
         <field name="workshopStockLocation" required="true" form-view="stock-location-form"
           grid-view="stock-location-grid" colSpan="2" canEdit="false"
-          onChange="action-manuf-order-record-workshop-onchange" readonlyIf="statusSelect &gt; 1"
+          readonlyIf="statusSelect &gt; 1"
           if="__config__.app.getApp('production')?.getManageWorkshop()"
-          domain="self.company = :company and self.typeSelect = 1 and self.isWorkshop = true"/>
+          onSelect="action-mauf-order-method-set-workshop-domain"/>
         <field name="$viewerIsOutsourcing" showTitle="false" readonly="true"
           showIf="$readonly()" colSpan="2" depends="prodProcess.outsourcing">
           <viewer>
@@ -165,9 +165,8 @@
           widget="NavSelect"/>
         <field name="billOfMaterial" required="true" readonlyIf="statusSelect &gt; 1"
           onChange="action-manuf-order-group-onchange"
-          domain="self.defineSubBillOfMaterial = true AND self.statusSelect = 3 AND ((:workshopStockLocation IS NULL AND self.workshopStockLocation IS NULL) OR self.workshopStockLocation = :workshopStockLocation) AND self.typeSelect = 1"
-          grid-view="bill-of-material-grid" form-view="bill-of-material-form" colSpan="3"
-          canEdit="false" edit-window="blank"/>
+          onSelect="action-mauf-order-method-set-bom-domain" grid-view="bill-of-material-grid"
+          form-view="bill-of-material-form" colSpan="3" canEdit="false" edit-window="blank"/>
         <field name="prodProcess" onChange="action-manuf-order-group-prod-process-onchange"
           onSelect="action-manuf-order-attrs-filter-prodProcess" readonlyIf="statusSelect &gt; 1"
           grid-view="prod-process-grid" form-view="prod-process-form" colSpan="3" canEdit="false"
@@ -242,6 +241,7 @@
             onChange="action-manuf-order-validate-planned-end-date" requiredIf="statusSelect > 1"/>
           <field name="$totalPlannedDuration" title="Total Planned Duration" type="long"
             readonly="true" widget="duration" x-seconds="true" x-big="true"/>
+          <field name="plannedDeliveryDateT" title="Delivery date"/>
           <field name="cancelReason" hidden="true" grid-view="cancel-reason-grid"
             form-view="cancel-reason-form"/>
           <field name="cancelReasonStr" title="Cancel Reason" hidden="true" readonly="true"
@@ -579,6 +579,15 @@
       method="generateMultiLevelManufOrder"/>
   </action-method>
 
+  <action-method name="action-mauf-order-method-set-workshop-domain">
+    <call class="com.axelor.apps.production.web.ManufOrderController"
+      method="setWorkshopDomain"/>
+  </action-method>
+
+  <action-method name="action-mauf-order-method-set-bom-domain">
+    <call class="com.axelor.apps.production.web.ManufOrderController" method="setBOMDomain"/>
+  </action-method>
+
   <action-record name="action-manuf-order-record-isConsProOnOperation"
     model="com.axelor.apps.production.db.ManufOrder">
     <field name="isConsProOnOperation" expr="eval: prodProcess?.isConsProOnOperation"/>
@@ -655,12 +664,6 @@
   <action-record name="action-manuf-order-record-empty-workshop"
     model="com.axelor.apps.production.db.ManufOrder">
     <field name="workshopStockLocation" expr="eval: null"/>
-  </action-record>
-
-  <action-record name="action-manuf-order-record-workshop-onchange"
-    model="com.axelor.apps.production.db.ManufOrder">
-    <field name="prodProcess" expr="eval: null"/>
-    <field name="billOfMaterial" expr="eval: null"/>
   </action-record>
 
   <action-group name="action-manuf-order-group-prod-process-onchange">
